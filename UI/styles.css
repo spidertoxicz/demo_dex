@@ -1,0 +1,25 @@
+body {
+  font-family: system-ui, sans-serif;
+  background: #0e0f13;
+  color: #e6e6eb;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+.panel {
+  background: #151823;
+  border: 1px solid #2a2f45;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+h2 {
+  font-size: 14px;
+  color: #9aa4ff;
+  margin-bottom: 6px;
+}

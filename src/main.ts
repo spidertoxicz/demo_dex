@@ -21,6 +21,7 @@ import { NETWORK_BSC } from "./config/network";
 // BOOTSTRAP (PRE-ENGINE)
 // ================================
 const BOOTSTRAP_CONTEXT = createBootstrapContext(NETWORK_BSC);
+bootstrapGuard(BOOTSTRAP_CONTEXT);
 
 // SAFETY GATE — MUST PASS BEFORE ANYTHING RUNS
 bootstrapGuard(BOOTSTRAP_CONTEXT);

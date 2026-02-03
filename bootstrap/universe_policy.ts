@@ -5,7 +5,7 @@ export type UniverseMode = "STATIC" | "DISCOVERY";
 export interface UniversePolicy {
   readonly mode: UniverseMode;
   readonly staticPools?: readonly string[];
-  readonly discoveryFactory?: readonly string[];
+  readonly discoveryFactory?: string; // SINGLE factory
   readonly maxPools: number;
 }
 
@@ -19,11 +19,11 @@ export function createUniversePolicy(
   policy: UniversePolicy
 ): Readonly<UniversePolicy> {
   validateUniversePolicy(policy);
+
   return Object.freeze({
     ...policy,
-    staticPools: policy.staticPools ? Object.freeze([...policy.staticPools]) : undefined,
-    discoveryFactory: policy.discoveryFactory
-      ? Object.freeze([...policy.discoveryFactory])
+    staticPools: policy.staticPools
+      ? Object.freeze([...policy.staticPools])
       : undefined
   });
 }
@@ -33,11 +33,11 @@ function validateUniversePolicy(policy: UniversePolicy): void {
     throw new Error("STATIC universe requires staticPools");
   }
 
-  if (policy.mode === "DISCOVERY" && !policy.discoveryFactory?.length) {
+  if (policy.mode === "DISCOVERY" && !policy.discoveryFactory) {
     throw new Error("DISCOVERY universe requires discoveryFactory");
   }
 
-  if (policy.maxPools <= 0) {
-    throw new Error("maxPools must be > 0");
+  if (policy.maxPools < 0) {
+    throw new Error("maxPools must be >= 0");
   }
 }

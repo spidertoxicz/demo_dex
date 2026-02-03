@@ -56,6 +56,28 @@ Hard Rules:
 All engine time = blockTimestamp
 Wall-clock time ONLY allowed for L7 snapshots
 No engine logic may reference Date.now()
+## ENGINE V3 — Threshold Policy
+
+ENGINE V3 **MELARANG threshold epistemik**, termasuk namun tidak terbatas pada:
+- confidence score
+- signal strength
+- noise filtering threshold
+- probabilistic decision
+- market inference berbasis angka
+
+ENGINE V3 **HANYA MEMBOLEHKAN threshold mekanik**, dengan batasan:
+- digunakan **hanya untuk proteksi resource** (CPU, RAM, IO)
+- **TIDAK BOLEH** memfilter, membuang, atau mengubah event
+- **TIDAK BOLEH** menyimpulkan makna market
+- **TIDAK BOLEH** mengubah determinism replay
+
+Contoh threshold mekanik yang diperbolehkan:
+- backlog limit
+- queue size limit
+- memory / buffer guard
+- backpressure pause signal
+
+Runtime **hanya boleh PAUSE**, tidak boleh SELECT.
 2. ENGINE RUNTIME (Orchestrator) — LOCKED
 Status: ❌ NOT ENGINE LAYER
 Role: Deterministic pipeline runner.

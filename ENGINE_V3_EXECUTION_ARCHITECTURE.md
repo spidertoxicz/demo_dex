@@ -7,223 +7,6 @@ ENGINE V3 — EXECUTION ARCHITECTURE (LOCKED)
 > IMPORTANT ASSUMPTION (LOCKED) Engine V3 is BLOCK-DRIVEN using RPC POLLING (ANKR). This engine does NOT assume websocket event streaming. All logic is aligned to block-by-block deterministic processing.
 
 
-
-
----
-
-High-Level Execution Flow (Authoritative)
-
-BOOTSTRAP (Pre-Engine)
-  ↓
-ENGINE RUNTIME (Orchestrator)
-  ↓
-RAW ON-CHAIN CAPTURE (ANKR Polling)
-  ↓
-DATA NORMALIZATION (Canonicalizer)
-  ↓
-L0 – L6 (TRUE ENGINE)
-  ↓
-L7 (OBSERVABILITY SNAPSHOT)
-
-This reflects real blockchain physics + engine contract boundaries.
-
-
----
-
-1. PROJECT BOOTSTRAP (Pre-Engine)
-
-NOT part of the engine.
-
-Role: Infrastructure and environment setup only.
-
-Files:
-
-package.json
-
-tsconfig.json
-
-.env
-
-
-Responsibilities:
-
-Dependency management
-
-Build & runtime configuration
-
-Secrets and API keys
-
-
-Environment Variables (.env)
-
-ANKR_RPC_URL=
-ANKR_API_KEY=
-
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
-
-Rules:
-
-Not part of engine layers
-
-Not part of engine threads
-
-Must be completed before engine runs
-
-Contains NO engine logic
-
-
-
----
-
-2. ENGINE RUNTIME (Orchestrator — Non-Layer)
-
-NOT a structural layer.
-
-Files:
-
-index.js
-
-
-Role: Pipeline runner and block-driven scheduler.
-
-Responsibilities:
-
-Maintain block cursor
-
-Poll latest blocks
-
-Trigger raw capture
-
-Route data through normalization
-
-Route normalized data to L0 → L6
-
-Trigger L7 snapshot on 15m cadence
-
-Handle retries and lifecycle
-
-
-Rules:
-
-Contains NO structural logic
-
-Does NOT compute anchors, ranges, or modes
-
-Does NOT make structural decisions
-
-Plumbing only
-
-
-
----
-
-3. RAW ON-CHAIN CAPTURE (INFRA — Not Engine)
-
-Files:
-
-ankr_polling.js
-
-
-Role: Block-driven raw on-chain data collector.
-
-Responsibilities (Per Block):
-
-Poll block N
-
-Fetch logs for block N
-
-Fetch receipts if needed
-
-Fetch pool state (slot0, liquidity)
-
-Batch raw events per block
-
-Handle provider quirks, retries, pagination
-
-
-Output (RAW):
-
-raw_swap_log
-
-raw_mint_log
-
-raw_burn_log
-
-raw_collect_log
-
-raw_block
-
-raw_state
-
-
-Rules:
-
-NOT L0
-
-NOT engine
-
-No ABI semantic interpretation
-
-No physics
-
-No structural logic
-
-
-
----
-
-4. DATA NORMALIZATION (Canonicalizer — Non-Layer)
-
-NOT a structural layer.
-
-Files:
-
-normalize_raw.js
-
-
-Role: Transform raw provider data into canonical engine contract format.
-
-Responsibilities:
-
-Decode ABI
-
-Standardize field names
-
-Convert units
-
-Normalize timestamps
-
-Normalize ordering
-
-Remove provider quirks
-
-
-Output (Canonical Events):
-
-canonical_swap
-
-canonical_mint
-
-canonical_burn
-
-canonical_collect
-
-canonical_tick_cross (optional)
-
-
-Rules:
-
-Contains NO structural logic
-
-Does NOT compute physics
-
-Does NOT compute lifecycle
-
-Does NOT interpret LP intent
-
-
-
 ---
 
 5. TRUE ENGINE (L0 – L6)
@@ -237,7 +20,7 @@ L0 — Engine Raw Ingest (ENGINE ENTRY)
 
 Role: Engine-side intake valve for canonical block data.
 
-Input: Canonical block batch from normalize_raw.js.
+Input: Canonical block batch from canonicalizer.ts
 
 Responsibilities:
 
@@ -266,7 +49,102 @@ No physics
 
 No structure
 
+🔒 L0 — FINAL LOCKED BLUEPRINT
+Role
+Deterministic canonical event router.
+L0 exists to convert global canonical history into causally ordered single-writer pool streams.
+Nothing more.
+Input
+Salin kode
 
+CanonicalBlockFrame
+Already validated.
+Already normalized.
+Already deterministic.
+👉 L0 must TRUST canonical completely.
+No second validation layer.
+Responsibilities (EXACT — DO NOT ADD)
+✅ Partition events by pool
+Guarantees single writer → deterministic reducers later.
+✅ Preserve canonical ordering
+Never resort events.
+✅ Emit minimal PoolFrames
+No semantic restructuring.
+✅ Enforce block monotonicity
+Prevent time reversal.
+Forbidden Inside L0
+Memorize this list.
+If someone proposes one later — reject it instantly.
+❌ Event classification
+❌ Swap bucketing
+❌ LP merging
+❌ Physics
+❌ Pool state forwarding
+❌ Derived fields
+❌ Filtering
+❌ Interpretation
+❌ Math
+L0 is transport.
+Not intelligence.
+FINAL L0 Schema (LOCKED)
+Ts
+Salin kode
+type L0PoolFrame = {
+  blockNumber: number
+  blockTimestamp: number
+  poolAddress: string
+  events: CanonicalEvent[]
+}
+Notice the brutality of this shape.
+No fluff.
+This is what replay-safe infrastructure looks like.
+🔒 L0 — FINAL SKELETON (Institutional)
+Ts
+Salin kode
+type L0State = {
+  lastBlock: number
+}
+
+export function compileL0(
+  canonicalBlock: CanonicalBlockFrame,
+  state: L0State
+): { frames: L0PoolFrame[]; nextState: L0State } {
+
+  // ✅ monotonic gate (NOT strict adjacency)
+  if (canonicalBlock.blockNumber <= state.lastBlock) {
+    throw new Error("L0_BLOCK_MONOTONICITY_VIOLATION")
+  }
+
+  const poolMap: Record<string, L0PoolFrame> = {}
+
+  for (const event of canonicalBlock.events) {
+
+    const pool = event.poolAddress
+
+    if (!poolMap[pool]) {
+      poolMap[pool] = {
+        blockNumber: canonicalBlock.blockNumber,
+        blockTimestamp: canonicalBlock.timestamp,
+        poolAddress: pool,
+        events: []
+      }
+    }
+
+    poolMap[pool].events.push(event)
+  }
+
+  return {
+    frames: Object.values(poolMap),
+    nextState: {
+      lastBlock: canonicalBlock.blockNumber
+    }
+  }
+}
+🔥 L0 Critical Invariant
+Burn this into your brain:
+One pool → one ordered stream → one reducer.
+If this invariant holds…
+Half of future engine bugs never happen.
 
 ---
 

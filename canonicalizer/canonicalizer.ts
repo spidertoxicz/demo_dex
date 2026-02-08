@@ -1,76 +1,101 @@
-import { canonicalSort } from './canonical_sort'
-import { canonicalizeUnits } from './canonical_units'
-import {
-  canonicalizeSwap,
-  canonicalizeLiquidityDelta,
-} from './canonical_direction'
-import { validateRawBlock } from './canonical_validate'
-import {
-  CanonicalBlockResult,
-  CanonicalEvent,
-} from './canonical_types'
+type CanonicalEvent =
+  | CanonicalSwap
+  | CanonicalLiquidity
 
-/**
- * Canonicalizer Entry Point
- * ------------------------
- * - NOT engine
- * - NOT stateful
- * - deterministic
- * - replayable
- *
- * Pipeline:
- * 1. validate (HARD GATE)
- * 2. sort (canonical order)
- * 3. canonical transform
- */
-export function canonicalizeBlock(
-  rawEvents: any[]
-): CanonicalBlockResult {
-  // 1️⃣ HARD VALIDATION GATE
-  const validation = validateRawBlock(rawEvents)
-  if (validation.status === 'INVALID') {
-    return validation
+type Base = {
+  blockNumber: number
+  txIndex: number
+  logIndex: number
+}
+
+export type CanonicalSwap = Base & {
+  type: 'SWAP'
+  amount0: bigint
+  amount1: bigint
+  sqrtPriceX96: bigint
+  tick: bigint
+}
+
+export type CanonicalLiquidity = Base & {
+  type: 'LIQUIDITY'
+  liquidityDelta: bigint
+}
+
+export function canonicalizeBlock(rawEvents: any[]): CanonicalEvent[] {
+
+  // assume validator already ran
+  // DO NOT re-check duplicates here
+
+  const ordered = [...rawEvents].sort((a, b) =>
+    a.blockNumber - b.blockNumber ||
+    a.txIndex - b.txIndex ||
+    a.logIndex - b.logIndex
+  )
+
+  // monotonic invariant (future-proofing)
+  for (let i = 1; i < ordered.length; i++) {
+    const p = ordered[i - 1]
+    const c = ordered[i]
+
+    if (
+      p.blockNumber > c.blockNumber ||
+      (p.blockNumber === c.blockNumber && p.txIndex > c.txIndex) ||
+      (p.txIndex === c.txIndex && p.logIndex > c.logIndex)
+    ) {
+      throw new Error('NON_MONOTONIC_EVENT_ORDER')
+    }
   }
 
-  // 2️⃣ CANONICAL ORDERING
-  const ordered = canonicalSort(validation.events)
+  const out: CanonicalEvent[] = []
 
-  // 3️⃣ CANONICAL TRANSFORM
-  const canonicalEvents: CanonicalEvent[] = ordered.map((ev) => {
+  for (const ev of ordered) {
+
+    const base: Base = {
+      blockNumber: ev.blockNumber,
+      txIndex: ev.txIndex,
+      logIndex: ev.logIndex
+    }
+
     switch (ev.type) {
-      case 'SWAP': {
-        const swap = canonicalizeSwap({
-          amount0: ev.amount0,
-          amount1: ev.amount1,
-        })
 
-        return {
-          ...ev,
-          amount0: swap.amount0,
-          amount1: swap.amount1,
+      case 'SWAP': {
+
+        // CONSTRUCT — never spread
+        const swap: CanonicalSwap = {
+          ...base,
+          type: 'SWAP',
+          amount0: BigInt(ev.amount0),
+          amount1: BigInt(ev.amount1),
+          sqrtPriceX96: BigInt(ev.sqrtPriceX96),
+          tick: BigInt(ev.tick)
         }
+
+        out.push(swap)
+        break
       }
 
       case 'LIQUIDITY': {
-        const liquidityDelta = canonicalizeLiquidityDelta(
-          ev.liquidity,
-          ev.action // 'ADD' | 'REMOVE'
-        )
 
-        return {
-          ...ev,
-          liquidity: liquidityDelta,
+        const delta =
+          ev.action === 'ADD'
+            ? BigInt(ev.liquidity)
+            : -BigInt(ev.liquidity)
+
+        const liq: CanonicalLiquidity = {
+          ...base,
+          type: 'LIQUIDITY',
+          liquidityDelta: delta
         }
+
+        out.push(liq)
+        break
       }
 
       default:
-        // Unknown event types MUST be rejected upstream
-        return ev
+        // should be unreachable if validator works
+        throw new Error('UNREACHABLE_EVENT_TYPE')
     }
-  })
-
-  return {
-    status: 'VALID',
-    events: canonicalEvents,
   }
+
+  return out
 }

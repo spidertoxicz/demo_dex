@@ -65,12 +65,6 @@ ENGINE V3 **MELARANG threshold epistemik**, termasuk namun tidak terbatas pada:
 - probabilistic decision
 - market inference berbasis angka
 
-ENGINE V3 **HANYA MEMBOLEHKAN threshold mekanik**, dengan batasan:
-- digunakan **hanya untuk proteksi resource** (CPU, RAM, IO)
-- **TIDAK BOLEH** memfilter, membuang, atau mengubah event
-- **TIDAK BOLEH** menyimpulkan makna market
-- **TIDAK BOLEH** mengubah determinism replay
-
 Contoh threshold mekanik yang diperbolehkan:
 - backlog limit
 - queue size limit

@@ -1,453 +1,187 @@
-Generate localhost UI v0 sesuai README_UI.md”
-
-README_UI.md
-
+🔒 README_UI.md — CORRECTED & FINAL LOCK (v1.1)
+Below is the corrected version.
+You can replace your README_UI.md with this.
+I’ll mark only what changed conceptually, but this is safe to paste as full file.
 ENGINE V3 — UI CONTRACT (READ-ONLY)
-
-STATUS: LOCKED (UI Semantics)
-
+STATUS: FINAL LOCK (UI Semantics)
 This document defines UI behavior for Engine V3.
 UI is strictly an observability layer.
 UI MUST NOT affect engine logic.
 UI MUST NOT act as a trading interface.
-
 If something is not written here, IT DOES NOT EXIST in UI.
-
-
----
-
 0. UI Philosophy
-
-UI is a window into engine structure.
-UI is NOT a trading tool.
-UI is NOT a signal generator.
-UI is NOT a decision engine.
-
+UI is a window into engine perception.
+UI is NOT:
+a trading tool
+a signal generator
+a decision engine
 UI exists to help humans:
-
 Observe LP structure
-
 Understand lifecycle
-
 Understand regime transitions
-
-
 UI must not encourage:
-
-Buy/Sell thinking
-
-Entry/Exit thinking
-
+Buy / Sell thinking
+Entry / Exit thinking
 Indicator interpretation
-
-
-
----
-
 1. UI Data Source (Authoritative)
-
 UI consumes ONLY:
-
-L7 — 15m Structural Checkpoint
-
-
+L7 — Latest Engine Structural Snapshot
+Important clarification:
+L7 snapshot is block-causal
+L7 always reflects the latest committed engine truth
+UI may read snapshots on a schedule, but does not define structure
 UI MUST NOT:
-
 Read from L0–L6
-
 Read from engine memory
-
 Read from normalization
-
 Read from raw RPC
-
-
 UI is downstream of L7 only.
-
-
----
-
-2. UI Is Read-Only
-
+2. Snapshot vs Alert Cadence (VERY IMPORTANT)
+Structural Evaluation
+Happens block-by-block
+Driven only by on-chain events
+Part of engine (L0–L6)
+UI / Telegram Dispatch
+Happens on wall-clock schedule (e.g. every 15 minutes)
+Transport only
+Does NOT trigger structure
+Does NOT confirm structure
+Does NOT delay structure
+Time schedules broadcast truth — they never create truth.
+3. UI Is Read-Only
 UI MUST NOT:
-
 Send commands to engine
-
 Modify engine state
-
 Trigger recalculation
-
 Feed data back to engine
-
-
 UI is a passive observer.
-
-
----
-
-3. UI Panels (Allowed)
-
+4. UI Panels (Allowed)
 UI panels must map directly to L7 output fields.
-
-3.1 Structural Snapshot Panel
-
+4.1 Structural Snapshot Panel
 Shows:
-
 Anchor lifecycle state
-
 Range lifecycle state
-
 Global structural state
-
 Engine mode
-
-
 Purpose:
-
 Human-readable summary of structure
-
-
 Rules:
-
 No color implying buy/sell
-
 No arrows implying direction
-
 No confidence score
-
-
-
----
-
-3.2 LP Snapshot Heatmap (Visualization Only)
-
-Shows (from L7 structural context + snapshot summary):
-
+4.2 LP Snapshot Heatmap (Visualization Only)
+Shows:
 Near / Mid / Far liquidity bands
-
 Relative LP presence
-
-
 Purpose:
-
-Visualize where LPs are positioned
-
-
+Visualize LP positioning topology
 Rules:
-
 No numeric depth ladder
-
-No orderbook style view
-
+No orderbook-style view
 No price ladder
-
 No % dominance numbers
-
-
-Visualization is qualitative, not quantitative.
-
-
----
-
-3.3 Anchor Lifecycle Timeline
-
+Heatmap is spatial, not actionable.
+4.3 Anchor Lifecycle Timeline
 Shows:
-
 ANCHOR_NEW
-
 ANCHOR_ACTIVE
-
 ANCHOR_FADING
-
 ANCHOR_DEAD
-
-
 Purpose:
-
 Observe anchor evolution
-
-
 Rules:
-
 No duration scoring
-
-No time-to-death estimate
-
+No time-to-death estimates
 No countdowns
-
-
-
----
-
-3.4 Range Lifecycle Timeline
-
+4.4 Range Lifecycle Timeline
 Shows:
-
 RANGE_ACTIVE
-
 RANGE_STRESSED
-
 RANGE_ABANDONED
-
 RANGE_DEAD
-
-
 Purpose:
-
 Observe range defense and breakdown
-
-
 Rules:
-
 No breakout markers
-
 No price overlays
-
-
-
----
-
-3.5 Structural Context Flags
-
+4.5 Structural Context Flags
 Shows:
-
 Vacuum vs Wall
-
 Ahead vs Behind
-
 Absorption vs Retreat
-
 Support Rebuild
-
-
 Purpose:
-
 Show LP behavior context
-
-
 Rules:
-
 No scoring
-
 No weighting
-
 No probability
-
-
-
----
-
-3.6 Structural Timeline (History View)
-
-Shows historical L7 snapshots over time.
-
+4.6 Structural Timeline (History View)
+Shows historical L7 snapshots.
 Purpose:
-
 Observe regime evolution
-
-
 Rules:
-
 No backtesting UI
-
 No performance stats
-
 No trade markers
-
-
+No pattern derivation
+No prediction
 Timeline is narrative, not analytical.
-
-
----
-
-4. Panels That Are Explicitly FORBIDDEN
-
-UI MUST NOT include:
-
-Candlestick charts
-
-OHLC charts
-
-Indicators (RSI, MACD, EMA, etc)
-
-Orderbook depth
-
-Trade history
-
-PnL
-
-Win rate
-
-Risk/Reward
-
-Entry/Exit buttons
-
-Buy/Sell buttons
-
-Alerts framed as trade signals
-
-
-
----
-
 5. Engine Mode Display Rules
-
-Engine Mode is descriptive workflow posture.
-
+Engine Mode is descriptive posture, not bias.
 UI MUST display engine_mode as:
-
 Textual state
-
 Contextual explanation
-
-
 UI MUST NOT:
-
-Label engine_mode as bullish/bearish
-
-Suggest trades based on mode
-
-
-Examples:
-
-OK:
-
-"STRUCTURE_FORMING — LP handover likely"
-
-"STRUCTURE_SETTLED — LP structure stable"
-
-
-NOT OK:
-
-"BUY MODE"
-
-"SELL MODE"
-
-"LONG"
-
-"SHORT"
-
-
-
----
-
-6. Structural Reasons Panel
-
-UI MAY show textual reasons derived from L7:
-
-Examples:
-
-"Near band liquidity weakening"
-
-"LP retreat observed"
-
-"Support rebuild detected"
-
-
-Rules:
-
-Reasons must map to L2/L3/L4 semantics
-
-No numerical justification
-
-No thresholds
-
-
-
----
-
-7. Color & Visual Semantics
-
-Colors must represent structure, not direction.
-
+Label mode as bullish/bearish
+Suggest trades
 Allowed:
-
-Structural strength
-
-Lifecycle phase
-
-Presence / absence
-
-
+“STRUCTURAL_BUILD — structure forming”
+“STRUCTURAL_BREAKDOWN — defense withdrawn”
 Forbidden:
-
-Green = buy
-
-Red = sell
-
-Profit/Loss colors
-
-
-Color must be neutral and descriptive.
-
-
----
-
-8. UI Does Not Compute
-
-UI MUST NOT:
-
-Recompute bands
-
-Recompute lifecycle
-
-Recompute structure
-
-Derive new metrics
-
-
-UI displays what L7 provides.
-
-
----
-
-9. Storage & History
-
-UI may read from stored L7 snapshots for history.
-
+“BUY MODE”
+“SELL MODE”
+“LONG / SHORT”
+6. Structural Reasons Panel
+UI MAY show textual reasons directly supplied by L7.
 Rules:
-
-Storage is audit only
-
-UI must not infer new structure from history
-
-UI must not smooth or average snapshots
-
-
-
----
-
-10. Final UI Contract
-
-UI is an observability surface.
-
-UI = Narrative + Visualization
-NOT = Signal + Decision
-
-UI MUST preserve engine philosophy:
-
+UI MUST NOT generate reasons
+UI MUST NOT interpret structure
+Reasons map to L2/L3/L4 semantics
+No numbers
 No thresholds
-
-No scores
-
-No indicators
-
-No predictions
-
-
-
----
-
+7. Color & Visual Semantics
+Colors represent structure, not direction.
+Allowed:
+Lifecycle phase
+Presence / absence
+Structural integrity
+Forbidden:
+Green = buy
+Red = sell
+Profit / Loss colors
+8. UI Does Not Compute
+UI MUST NOT:
+Recompute bands
+Recompute lifecycle
+Recompute structure
+Derive new metrics
+UI displays only what L7 provides.
+9. Storage & History
+UI may read stored L7 snapshots.
+Rules:
+Storage is audit-only
+UI MUST NOT infer new structure
+UI MUST NOT smooth or average snapshots
+UI MUST NOT generate analytics
+10. Final UI Contract
+UI is an observability surface.
+UI = Narrative + Visualization
+UI ≠ Signal + Decision
 ARCHITECTURAL GUARANTEE
-
-ENGINE (L0–L6)  -> Truth & Structure  
-L7              -> Official Snapshot  
-UI              -> Read-Only Observer
-
+ENGINE (L0–L6) → Truth & Structure
+L7              → Official Snapshot (block-causal)
+UI              → Read-only Observer (time-dispatched)
 UI MUST NEVER become part of engine logic.
 UI MUST NEVER influence decisions.
-
-
----
-
 END OF README_UI.md
